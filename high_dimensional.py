@@ -40,13 +40,13 @@ def Stratified_Matrix(ww, M):
             i = i + 1
     return weight_matrix_res
 
-def Stratified_Resampling(particles, weights, size):
+def Stratified_Resampling(particles, weights, size, alpha): # need modification
     weight_matrix = Stratified_Matrix(weights, size)
     indices = [random.choice(range(len(particles)), p = w) for w in weight_matrix]
     res = np.array([particles[i] for i in indices])
     return res  
 
-def Hilbert_Resampling(particles, weights, size, t):
+def Hilbert_Resampling(particles, weights, size, t, alpha): # need modification
     particles = np.array(particles)
     # print(particles)
     dim = particles.shape[1]
@@ -65,7 +65,7 @@ def Hilbert_Resampling(particles, weights, size, t):
     res = np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))])
     return res
 
-def Multinomial_Resampling(particles, weights, size):
+def Multinomial_Resampling(particles, weights, size, alpha): # need modification
     indices = [random.choice(range(len(particles)), p = weights) for _ in range(size)]
     res = np.array([particles[i] for i in indices])
     return res
@@ -119,7 +119,7 @@ def Hilbert_Stratified_Proposal(particles, t, multiple_des = 4, sd = 3):
     weight = weight/np.sum(weight)
     return x_prop, weight
 
-def Sampling(T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = False):
+def Sampling(T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = False, alpha): # need modification
     if print_step:
         print("dimension "+ str(1) + "/" + str(T))
     w = np.zeros(size)
@@ -143,5 +143,4 @@ def Sampling(T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resa
             xt1 = Hilbert_Resampling(xt1star, w, size, t)
         if t==T-1:
             return xt1star, w, np.linalg.norm(np.transpose(xt1star)@w)**2
-            # res = np.linalg.norm(np.transpose(xt1star)@w)**2
-            # return(res)
+            # add variance of each step
