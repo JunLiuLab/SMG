@@ -40,8 +40,7 @@ def Stratified_Matrix(ww, M):
             i = i + 1
     return weight_matrix_res
 
-def Stratified_Resampling(particles, weights, size, rho):
-    # Wenshuo: now returns weighted particles
+def General_Resampling_Weights(weights, rho):
     resampling_weights = np.power(weights, rho)
     if rho == 1:
         weights_after = np.ones(len(weights))
@@ -49,7 +48,11 @@ def Stratified_Resampling(particles, weights, size, rho):
         weights_after = np.power(weights, 1-rho)
     resampling_weights = resampling_weights/np.sum(resampling_weights)
     weights_after = weights_after/np.sum(weights_after)
-    weight_matrix = Stratified_Matrix(resampling_weights, size)
+    return resampling_weights, weights_after
+
+def Stratified_Resampling(particles, weights, size, rho):
+    # Wenshuo: now returns weighted particles
+    resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
     indices = [random.choice(range(len(particles)), p = w) for w in weight_matrix]
     res = [np.array([particles[i] for i in indices]), np.array([weights_after[i] for i in indices])]
     return res
