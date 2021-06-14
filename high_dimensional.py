@@ -53,6 +53,7 @@ def General_Resampling_Weights(weights, rho):
 def Stratified_Resampling(particles, weights, size, rho):
     # Wenshuo: now returns weighted particles
     resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
+    weight_matrix = Stratified_Matrix(resampling_weights, M = size)
     indices = [random.choice(range(len(particles)), p = w) for w in weight_matrix]
     res = [np.array([particles[i] for i in indices]), np.array([weights_after[i] for i in indices])]
     return res
@@ -66,14 +67,16 @@ def Hilbert_Resampling(particles, weights, size, t, rho):
     pmin = [min(particles[:,k])-0.1 for k in range(dim)]
     unified_particles = np.array([[(par[k]-pmin[k])/(pmax[k]-pmin[k]) for k in range(dim)] for par in particles])
     hilbert_mapping = [Hilbert_Mapping(up, dim=dim) for up in unified_particles]
-    Weighted_Sample = pd.concat([pd.DataFrame(particles),pd.DataFrame({"weight": weights, 'map': hilbert_mapping})],axis=1)
+    # getting weights
+    resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
+    Weighted_Sample = pd.concat([pd.DataFrame(particles),pd.DataFrame({"weight": resampling_weights, 'map': hilbert_mapping})],axis=1)
     Weighted_Sample = Weighted_Sample.sort_values(by = ['map'], ascending = True)
     Weighted_Sample.index = range(Weighted_Sample.shape[0])
     w = Weighted_Sample['weight']
     weight_matrix = Stratified_Matrix(w, M = size)
     
     indices = [random.choice(range(len(particles)), p = w) for w in weight_matrix]
-    res = np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))])
+    res = [np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))]), np.array([weights_after[i] for i in indices])]
     return res
 
 def Multinomial_Resampling(particles, weights, size, alpha): # need modification
