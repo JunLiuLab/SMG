@@ -79,12 +79,13 @@ def Hilbert_Resampling(particles, weights, size, t, rho):
     res = [np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))]), np.array([weights_after[i] for i in indices])]
     return res
 
-def Multinomial_Resampling(particles, weights, size, alpha): # need modification
+def Multinomial_Resampling(particles, weights, size, rho):
+    resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
     indices = [random.choice(range(len(particles)), p = weights) for _ in range(size)]
-    res = np.array([particles[i] for i in indices])
+    res = [np.array([particles[i] for i in indices]), np.array([weights_after[i] for i in indices])]
     return res
 
-def Multiple_Descendent_Proposal(particles, t, multiple_des = 4, sd = 3):
+def Multiple_Descendent_Proposal(particles, weights, rho, t, multiple_des = 4, sd = 3):
     T = particles.shape[1]
     size = particles.shape[0]
     x_prop = np.zeros((size*multiple_des,T))
@@ -97,6 +98,8 @@ def Multiple_Descendent_Proposal(particles, t, multiple_des = 4, sd = 3):
     x_prop = np.array(x_prop)
     weight = weight - np.max(weight)
     weight = np.exp(weight)
+    weight = weight/np.sum(weight)
+    weight = np.array([weight[i]*weights[i] for i in range(size)])
     weight = weight/np.sum(weight)
     return x_prop, weight
 
@@ -114,7 +117,8 @@ def Hilbert_Mapping_Inverse(h, p = 8, dim = 10):
     aa = aa/(2**p)
     return aa
 
-def Hilbert_Stratified_Proposal(particles, t, multiple_des = 4, sd = 3):
+def Hilbert_Stratified_Proposal(particles, weights, rho, t, multiple_des = 4, sd = 3):
+    # not done, add weights and rho; see Multiple_Descendent_Proposal
     T = particles.shape[1]
     size = particles.shape[0]
     x_prop = np.zeros((size*multiple_des,T))
@@ -150,9 +154,9 @@ def Sampling(T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resa
         if print_step:
             print("dimension "+ str(t+1) + "/" + str(T))
         if prop == 'i.i.d.':
-            xt1star, w = Multiple_Descendent_Proposal(xt1, t, multiple_des, sd)
+            xt1star, w = Multiple_Descendent_Proposal(xt1, w, rho, t, multiple_des, sd)
         elif prop == 'SMG':
-            xt1star, w = Hilbert_Stratified_Proposal(xt1, t, multiple_des, sd)
+            xt1star, w = Hilbert_Stratified_Proposal(xt1, w, rho, t, multiple_des, sd)
         if t<T-1:
             xt1 = Hilbert_Resampling(xt1star, w, size, t)
         if t==T-1:
