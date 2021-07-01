@@ -1,20 +1,29 @@
 
-
+import sys
+import pandas as pd
+import math
+import numpy as np
+from numpy import random
+from scipy.stats import norm, multivariate_normal, uniform, chi2
+from hilbertcurve.hilbertcurve import HilbertCurve
+from joblib import Parallel, delayed
+import timeit
 
 a, b, c, d = sys.argv[1:]
 n_dim = int(a) # number of dimensions
 n_particles = int(b) # number of particles
 n_multiple_des = int(c) # number of decsendants
 
-%run -i high_dimensional.py
-
+from high_dimensional import *
 import matplotlib.pyplot as plt
 
-def log_target_f(t, x):
-    # defining the log density of the target
-    return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),2*np.eye(t+1))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),2*np.eye(t+1))))
-sd = 3 # standard deviation of trial distribution
-
+# =============================================================================
+# def log_target_f(t, x):
+#     # defining the log density of the target
+#     return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),2*np.eye(t+1))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),2*np.eye(t+1))))
+# sd = 3 # standard deviation of trial distribution
+# 
+# =============================================================================
 if d == 'exponential':
     rhos_used = np.array([(t+1)/T for t in range(T)])
 else:
@@ -22,7 +31,7 @@ else:
 
 np.random.seed(2020)
 # printing steps
-Samples_iid, weights_iid, MSE_iid = Sampling(T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = True)
+Samples_iid, weights_iid, MSE_iid = Sampling(T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = False)
 Samples_SMG, weights_SMG, MSE_SMG = Sampling(T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'SMG', resample = Hilbert_Resampling, print_step = False)
 Samples_more_particles, weights_more_particles, MSE_more_particles = Sampling(T = n_dim, size = n_multiple_des*n_particles, multiple_des = 1, sd = sd, prop = 'SMG', resample = Hilbert_Resampling, print_step = False)
 
