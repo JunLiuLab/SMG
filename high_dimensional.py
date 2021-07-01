@@ -14,8 +14,8 @@ from joblib import Parallel, delayed
 import timeit
 import sys
 
-# def log_target_f(t, x):
-#     return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),2*np.eye(t+1))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),2*np.eye(t+1))))
+def log_target_f(t, x):
+    return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),2*np.eye(t+1))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),2*np.eye(t+1))))
 
 def Stratified_Matrix(ww, M):
     w = ww.copy()
@@ -69,6 +69,7 @@ def Hilbert_Resampling(particles, weights, size, t, rho):
     hilbert_mapping = [Hilbert_Mapping(up, dim=dim) for up in unified_particles]
     # getting weights
     resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
+    print(resampling_weights.shape, particles.shape)
     Weighted_Sample = pd.concat([pd.DataFrame(particles),pd.DataFrame({"weight": resampling_weights, 'map': hilbert_mapping})],axis=1)
     Weighted_Sample = Weighted_Sample.sort_values(by = ['map'], ascending = True)
     Weighted_Sample.index = range(Weighted_Sample.shape[0])
@@ -76,14 +77,16 @@ def Hilbert_Resampling(particles, weights, size, t, rho):
     weight_matrix = Stratified_Matrix(w, M = size)
     
     indices = [random.choice(range(len(particles)), p = w) for w in weight_matrix]
-    res = [np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))]), np.array([weights_after[i] for i in indices])]
-    return res
+    xx = np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))])
+    ww = np.array([weights_after[i] for i in indices])
+    return xx, ww
 
 def Multinomial_Resampling(particles, weights, size, rho):
     resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
     indices = [random.choice(range(len(particles)), p = weights) for _ in range(size)]
-    res = [np.array([particles[i] for i in indices]), np.array([weights_after[i] for i in indices])]
-    return res
+    xx = np.array([particles[i] for i in indices])
+    ww = np.array([weights_after[i] for i in indices])
+    return xx, ww
 
 def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, sd = 3):
     T = particles.shape[1]
@@ -99,10 +102,13 @@ def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, sd = 3
     weight = weight - np.max(weight)
     weight = np.exp(weight)
     weight = weight/np.sum(weight)
+<<<<<<< HEAD
+=======
     for ipar in range(size):
         for k in range(multiple_des):
             weight[ipar*multiple_des+k] = weight[ipar*multiple_des+k] * weights[ipar]
     weight = weight/np.sum(weight)
+>>>>>>> 5f8371b107aad4f179838d47feafe55673c2a5da
     return x_prop, weight
 
 def Hilbert_Mapping(x, p = 8, dim = 10):
@@ -143,7 +149,11 @@ def Hilbert_Stratified_Proposal(particles, weights, t, multiple_des = 4, sd = 3)
     weight = weight/np.sum(weight)
     return x_prop, weight
 
+<<<<<<< HEAD
+def Sampling(rho, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = True): #need modification
+=======
 def Sampling(T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = False, rhos = np.array([1.0]*T)):
+>>>>>>> 5f8371b107aad4f179838d47feafe55673c2a5da
     if print_step:
         print("dimension "+ str(1) + "/" + str(T))
     w = np.zeros(size)
@@ -155,16 +165,29 @@ def Sampling(T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resa
     w = [math.exp(x) for x in w]
     w = [x/sum(w) for x in w]
     w = np.array(w)
+<<<<<<< HEAD
+    xt1, w = resample(xt1, w, size, 0, rho)
+=======
     xt1 = Hilbert_Resampling(xt1, w, size, 0, rhos[0])
+>>>>>>> 5f8371b107aad4f179838d47feafe55673c2a5da
     for t in range(1,T):
         if print_step:
             print("dimension "+ str(t+1) + "/" + str(T))
         if prop == 'i.i.d.':
+<<<<<<< HEAD
+            xt1star, w = Multiple_Descendent_Proposal(xt1, w, t, multiple_des, sd)
+        elif prop == 'SMG':
+            xt1star, w = Hilbert_Stratified_Proposal(xt1, w, t, multiple_des, sd)
+        print(xt1star.shape, w.shape)
+        if t<T-1:
+            xt1, w = resample(xt1star, w, size, t, rho)
+=======
             xt1star, w = Multiple_Descendent_Proposal(xt1, w, rhos[t], t, multiple_des, sd)
         elif prop == 'SMG':
             xt1star, w = Hilbert_Stratified_Proposal(xt1, w, rhos[t], t, multiple_des, sd)
         if t<T-1:
             xt1, w = Hilbert_Resampling(xt1star, w, size, t, rhos[t])
+>>>>>>> 5f8371b107aad4f179838d47feafe55673c2a5da
         if t==T-1:
             return xt1star, w, np.linalg.norm(np.transpose(xt1star)@w)**2
             # add variance of each step
