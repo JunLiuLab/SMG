@@ -172,3 +172,4 @@ def Sampling(rho, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.',
         if t==T-1:
             return xt1star, w, np.linalg.norm(np.transpose(xt1star)@w)**2
             # add variance of each step
+
