@@ -101,7 +101,7 @@ for _ in range(160):
     err_more.append(err3)
     err_ada.append(err4)
 res = pd.DataFrame([err_iid, err_smg, err_more, err_ada])
-res.to_csv(str(n_dim) + '_' + str(n_particles) + '_' + str(rho) + 'res.csv', index = False)
+res.to_csv(str(n_dim) + '_' + str(correlation) + '_' + target_type + '_' + str(n_particles) + '_' + str(n_multiple_des) + '_' + str(rho) + 'res.csv', index = False)
 # =============================================================================
 # f= open('weighted_resampling.csv', 'a')
 # f.write(a + ',' + ',' + b + ','+ c + ','+ d + ',' + str(err1) + ',' + str(err2) + ',' + str(err3) + '\n')
