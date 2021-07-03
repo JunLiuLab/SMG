@@ -16,14 +16,30 @@ from joblib import Parallel, delayed
 import timeit
 import ot
 
-a, b, c, d = sys.argv[1:]
+a, b, c, d, e, f = sys.argv[1:]
 n_dim = int(a) # number of dimensions
 n_particles = int(b) # number of particles
 n_multiple_des = int(c) # number of decsendants
 rho = float(d)# rho
+e = float(e) # correlation
+target_type = f
 
 from high_dimensional import *
 import matplotlib.pyplot as plt
+
+def cov(dim = 2, correlation = 0.5):
+    res = np.eye(dim)
+    for j in range(dim-1):
+        res[j, j+1] = correlation
+        res[j+1, j] = correlation
+    return res
+
+if target_type == 'unimodal':
+    def log_target_f(t, x):
+        return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e)))
+else:
+    def log_target_f(t, x):
+        return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, e))))
 
 sd = 3
 err_iid = []
