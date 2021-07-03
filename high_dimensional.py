@@ -173,3 +173,29 @@ def Sampling(rho, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.',
             return xt1star, w, np.linalg.norm(np.transpose(xt1star)@w)**2
             # add variance of each step
 
+def Adaptive_Sampling(ess_ratio, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = True): #need modification
+    if print_step:
+        print("dimension "+ str(1) + "/" + str(T))
+    w = np.zeros(size)
+    xt1 = np.zeros((size,T))
+    xt1[:,0] = np.array([random.normal(0,sd) for _ in range(size)])
+    for i in range(size):
+        w[i] = log_target_f(0,xt1[i]) - norm.logpdf(xt1[i,0], 0, sd)
+    w = [x-max(w) for x in w]
+    w = [math.exp(x) for x in w]
+    w = [x/sum(w) for x in w]
+    w = np.array(w)
+    xt1, w = resample(xt1, w, size, 0, 1)
+
+    for t in range(1,T):
+        if print_step:
+            print("dimension "+ str(t+1) + "/" + str(T))
+        if prop == 'i.i.d.':
+            xt1star, w = Multiple_Descendent_Proposal(xt1, w, t, multiple_des, sd)
+        elif prop == 'SMG':
+            xt1star, w = Hilbert_Stratified_Proposal(xt1, w, t, multiple_des, sd)
+        if t<T-1 and 1/sum(w**2) < ess_ratio*size*multiple_des:
+            xt1, w = resample(xt1star, w, size, t, 1)
+        if t==T-1:
+            return xt1star, w, np.linalg.norm(np.transpose(xt1star)@w)**2
+    
