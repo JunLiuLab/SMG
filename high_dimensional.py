@@ -14,15 +14,15 @@ from joblib import Parallel, delayed
 import timeit
 import sys
 
-def cov(dim = 2, correlation = 0.5):
-    res = np.eye(dim)
-    for j in range(dim-1):
-        res[j, j+1] = correlation
-        res[j+1, j] = correlation
-    return res
+# def cov(dim = 2, correlation = 0.5):
+#     res = np.eye(dim)
+#     for j in range(dim-1):
+#         res[j, j+1] = correlation
+#         res[j+1, j] = correlation
+#     return res
 
-def log_target_f(t, x):
-    return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, 0.5))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, 0.5))))
+# def log_target_f(t, x):
+#     return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, 0.5))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, 0.5))))
 
 def Stratified_Matrix(ww, M):
     w = ww.copy()

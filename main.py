@@ -24,8 +24,7 @@ rho = float(d)# rho
 e = float(e) # correlation
 target_type = f
 
-from high_dimensional import *
-import matplotlib.pyplot as plt
+
 
 def cov(dim = 2, correlation = 0.5):
     res = np.eye(dim)
@@ -38,15 +37,15 @@ def cov(dim = 2, correlation = 0.5):
 def log_target_f(t, x):
     if target_type == 'unimodal':
         res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e))
-        # return math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e)))
     else:
         res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, e))
-        # return math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, e)))
     if res == 0:
         return float('-inf')
     else:
         return math.log(res)
 
+from high_dimensional import *
+import matplotlib.pyplot as plt
 
 sd = 3
 err_iid = []
