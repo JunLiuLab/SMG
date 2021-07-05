@@ -1,4 +1,4 @@
-for PARAM1 in 20; do for RHO in 100; do for DIM in 4; do for NT in 0.4; do for COR in 0 0.5; do for TYPE in unimodal bimodal; do
+for PARAM1 in 20; do for RHO in 100; do for DIM in 4; do for NT in 0.0; do for COR in 0 0.5; do for TYPE in unimodal bimodal; do
 #
 export PARAM1 RHO DIM NT COR TYPE
 #
