@@ -21,7 +21,7 @@ n_dim = int(a) # number of dimensions
 n_particles = int(b) # number of particles
 n_multiple_des = int(c) # number of decsendants
 rho = float(d)# rho
-e = float(e) # correlation
+correlation = float(e) # correlation
 target_type = f
 
 
@@ -36,9 +36,9 @@ def cov(dim = 2, correlation = 0.5):
 
 def log_target_f(t, x):
     if target_type == 'unimodal':
-        res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e))
+        res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, correlation))
     else:
-        res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, e))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, e))
+        res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, correlation))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, correlation))
     if res == 0:
         return float('-inf')
     else:
