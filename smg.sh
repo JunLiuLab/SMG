@@ -14,4 +14,4 @@ source activate root3.6
 # export R_LIBS_USER=$HOME/apps/R:$R_LIBS_USER
 # Rscript feicheng.R ${RHO} ${VARY} ${VAR} ${PARAM1}
 
-python main.py ${PARAM1} ${RHO} ${DIM} ${NT} ${COV} ${TYPE}
+python main.py ${PARAM1} ${RHO} ${DIM} ${NT} ${COR} ${TYPE}
