@@ -265,6 +265,10 @@ err_iid = []
 err_smg = []
 err_more = []
 err_ada = []
+mse_iid = []
+mse_smg = []
+mse_more = []
+mse_ada = []
 for _ in range(160):
     Samples_iid, weights_iid, MSE_iid = Sampling(rho = rho, T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = False)
     Samples_SMG, weights_SMG, MSE_SMG = Sampling(rho = rho, T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'SMG', resample = Hilbert_Resampling, print_step = False)
@@ -319,7 +323,11 @@ for _ in range(160):
     err_smg.append(err2)
     err_more.append(err3)
     err_ada.append(err4)
-res = pd.DataFrame([err_iid, err_smg, err_more, err_ada])
+    mse_iid.append(MSE_iid)
+    mse_smg.append(MSE_SMG)
+    mse_more.append(MSE_more_particles)
+    mse_ada.append(MSE_ada)
+res = pd.DataFrame([err_iid, err_smg, err_more, err_ada, mse_iid, mse_smg, mse_more, mse_ada])
 res.to_csv('/n/jun_liu_lab/smg/' + str(n_dim) + '_' + str(correlation) + '_' + target_type + '_' + str(n_particles) + '_' + str(n_multiple_des) + '_' + str(rho) + 'res.csv', index = False)
 # =============================================================================
 # f= open('weighted_resampling.csv', 'a')
