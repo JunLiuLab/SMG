@@ -44,6 +44,12 @@ def log_target_f(t, x):
     else:
         return math.log(res)
 
+def oracle_sampling(ndim):
+    if target_type == 'unimodal':
+        return multivariate_normalrvs(mean = 3*np.ones(ndim), cov = 4*cov(t+1, correlation), size = 1)
+    else:
+        return bernoulli.rvs(p = 1/2, size = 1) * multivariate_normal.rvs(mean = 3*np.ones(ndim), cov = 4*cov(t+1, correlation), size = 1)
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar  2 16:33:14 2020
@@ -289,9 +295,9 @@ for _ in range(160):
     #plt.savefig('SMG'+ a +'_'+ b + '_'+ c + '_' + d + '.png',bbox_inches='tight')
     samples_ada = Hilbert_Resampling(Samples_ada, weights_ada, n_particles, n_dim-1, rho= 1)[0]
     
-    component = bernoulli.rvs(p = 1/2, size = n_particles)
-    multi_sample = multivariate_normal.rvs(mean = np.zeros(n_dim), cov = np.eye(n_dim), size = n_particles)
-    sample_oracle = np.array([component[i]*np.ones(n_dim) + multi_sample[i] for i in range(n_particles)])
+    # component = bernoulli.rvs(p = 1/2, size = n_particles)
+    # multi_sample = multivariate_normal.rvs(mean = np.zeros(n_dim), cov = np.eye(n_dim), size = n_particles)
+    sample_oracle = np.array([oracle_sampling(n_dim) for i in range(n_particles)])
     
     eqweight = np.ones(n_particles)/n_particles
     dist_mat = np.array([[np.linalg.norm(sample_oracle[i] - samples_iid[j]) for j in range(n_particles)] for i in range(n_particles)])
@@ -314,7 +320,7 @@ for _ in range(160):
     err_more.append(err3)
     err_ada.append(err4)
 res = pd.DataFrame([err_iid, err_smg, err_more, err_ada])
-res.to_csv(str(n_dim) + '_' + str(correlation) + '_' + target_type + '_' + str(n_particles) + '_' + str(n_multiple_des) + '_' + str(rho) + 'res.csv', index = False)
+res.to_csv('/n/jun_liu_lab/smg/' + str(n_dim) + '_' + str(correlation) + '_' + target_type + '_' + str(n_particles) + '_' + str(n_multiple_des) + '_' + str(rho) + 'res.csv', index = False)
 # =============================================================================
 # f= open('weighted_resampling.csv', 'a')
 # f.write(a + ',' + ',' + b + ','+ c + ','+ d + ',' + str(err1) + ',' + str(err2) + ',' + str(err3) + '\n')
