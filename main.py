@@ -48,7 +48,7 @@ def oracle_sampling(ndim):
     if target_type == 'unimodal':
         return multivariate_normalrvs(mean = 3*np.ones(ndim), cov = 4*cov(ndim, correlation), size = 1)
     else:
-        return bernoulli.rvs(p = 1/2, size = 1) * multivariate_normal.rvs(mean = 3*np.ones(ndim), cov = 4*cov(ndim, correlation), size = 1)
+        return (2*bernoulli.rvs(p = 1/2, size = 1)-1) * multivariate_normal.rvs(mean = 3*np.ones(ndim), cov = 4*cov(ndim, correlation), size = 1)
 
 # -*- coding: utf-8 -*-
 """
