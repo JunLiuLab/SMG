@@ -103,12 +103,13 @@ def Stratified_Matrix(ww, M):
 
 def General_Resampling_Weights(weights, rho):
     resampling_weights = np.power(weights, rho)
+    resampling_weights_sum = np.sum(resampling_weights)
     if rho == 1:
-        weights_after = np.ones(len(weights))
+        weights_after = np.ones(len(weights))/len(weights)
     else:
         weights_after = np.power(weights, 1-rho)
-    resampling_weights = resampling_weights/np.sum(resampling_weights)
-    weights_after = weights_after/np.sum(weights_after)
+    resampling_weights = resampling_weights/resampling_weights_sum
+    weights_after = weights_after*resampling_weights_sum/len(weights)
     return resampling_weights, weights_after
 
 def Stratified_Resampling(particles, weights, size, rho):
@@ -143,7 +144,7 @@ def Hilbert_Resampling(particles, weights, size, t, rho):
 
 def Multinomial_Resampling(particles, weights, size, rho):
     resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
-    indices = [random.choice(range(len(particles)), p = weights) for _ in range(size)]
+    indices = [random.choice(range(len(particles)), p = resampling_weights) for _ in range(size)]
     xx = np.array([particles[i] for i in indices])
     ww = np.array([weights_after[i] for i in indices])
     return xx, ww
@@ -211,12 +212,12 @@ def Hilbert_Stratified_Proposal(particles, weights, t, multiple_des = 4, sd = 3)
     return x_prop, weight
 
 
-def Sampling(rho, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'stratified', resample = Hilbert_Resampling, print_step = True): #need modification
+def Sampling(rho, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'stratified', resample = Multinomial_Resampling, print_step = True): #need modification
     if print_step:
         print("dimension "+ str(1) + "/" + str(T))
     w = np.ones(size)
     xt1 = [[np.array([0,0])] for _ in range(size)]
-    normalizing_constant_estimate = [1]*T
+    normalizing_constant_estimate = [1.0]*T
     for t in range(1,T):
         if print_step:
             print("dimension "+ str(t+1) + "/" + str(T))
@@ -225,7 +226,7 @@ def Sampling(rho, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'stratifi
         if t<T-1:
             xt1, w = resample(xt1star, w, size, t, rho)
         if t==T-1:
-            return xt1star, w, np.linalg.norm(np.transpose(xt1star)@w)**2
+            return xt1star, w, np.mean(w)
             # add variance of each step
 
 def Adaptive_Sampling(ess_ratio, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = True): #need modification
