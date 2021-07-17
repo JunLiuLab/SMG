@@ -150,18 +150,19 @@ def Multinomial_Resampling(particles, weights, size, rho):
     ww = ww/np.sum(ww)
     return xx, ww
 
-def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, descendent = 'stratified'):
+def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, descendant = 'stratified'):
     x_prop = []
     weight_prop = []
     i = 0
     for xi in particles:
-        up = xi[t-1] + np.array([0,1])
-        down = xi[t-1] + np.array([0,-1])
-        left = xi[t-1] + np.array([-1,0])
-        right = xi[t-1] + np.array([1,0])
+        up = np.array(xi[t-1]) + np.array([0,1])
+        down = np.array(xi[t-1]) + np.array([0,-1])
+        left = np.array(xi[t-1]) + np.array([-1,0])
+        right = np.array(xi[t-1]) + np.array([1,0])
+        print(np.array(xi), xi[t-1])
         legal = []
         for possible_xt in [up, down, left, right]:
-            if possible_xt not in xi:
+            if tuple(possible_xt) not in [tuple(xx) for xx in xi]:
                 legal.append(xi + [possible_xt])
         if len(legal) > 0:
             k = len(legal)
@@ -169,7 +170,7 @@ def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, descen
             if descendant == 'stratified':
                 x_prop = x_prop + legal
             else:
-                indices = [random.choice(range(k), p = np.array([1/k) for _ in range(k)])) for w in range(k)]
+                indices = [random.choice(range(k), p = np.array([1/k for _ in range(k)])) for w in range(k)]
                 x_prop = x_prop + [legal[j] for j in indices]
         i = i + 1
     return x_prop, weight_prop
@@ -199,13 +200,13 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100, multiple_des = 4, sd = 3, p
     for t in range(1,T):
         if print_step:
             print("dimension "+ str(t+1) + "/" + str(T))
-        xt1star, w = Multiple_Descendent_Proposal(xt1, w, t, multiple_des, prop)
+        xt1, w = Multiple_Descendent_Proposal(xt1, w, t, multiple_des, prop)
         normalizing_constant_estimate[t] = np.mean(w)
         w = w/np.sum(w)
         if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
-            xt1, w = resample(xt1star, w, size, t, rho)
+            xt1, w = resample(xt1, w, size, rho)
         if t==T-1:
-            return xt1star, w, np.mean(w)
+            return xt1, w, np.mean(w)
 
  
 import matplotlib.pyplot as plt
