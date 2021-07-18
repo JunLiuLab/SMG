@@ -1,4 +1,4 @@
-for PARAM1 in 20; do for RHO in 100; do for DIM in 4; do for NT in 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0; do for COR in 0 0.5; do for TYPE in unimodal bimodal; do
+for PARAM1 in 20; do for RHO in 100; do for NT in 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0; do for COR in 0.2 0.4 0.6 0.8 1.0; do
 #
 export PARAM1 RHO DIM NT COR TYPE
 #
@@ -8,8 +8,6 @@ sbatch -o outputs/oSMG_${PARAM1}_${RHO}_${DIM}_${NT}.stdout.txt \
 smg.sh
 #
 sleep 1
-done
-done
 done
 done
 done

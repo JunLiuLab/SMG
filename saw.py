@@ -1,58 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jul  2 18:05:07 2021
 
-@author: lucas_lyc
-"""
-
-import sys
-import pandas as pd
-import math
-import numpy as np
-from numpy import random
-from scipy.stats import norm, multivariate_normal, bernoulli, uniform, chi2
-from hilbertcurve.hilbertcurve import HilbertCurve
-from joblib import Parallel, delayed
-import timeit
-import ot
-
-a, b, c, d, e, f = sys.argv[1:]
-n_dim = int(a) # number of dimensions
-n_particles = int(b) # number of particles
-n_multiple_des = int(c) # number of decsendants
-rho = float(d)# rho
-correlation = float(e) # correlation
-target_type = f
-
-
-
-def cov(dim = 2, correlation = 0.5):
-    res = np.eye(dim)
-    for j in range(dim-1):
-        res[j, j+1] = correlation
-        res[j+1, j] = correlation
-    return res
-
-
-def log_target_f(t, x):
-    if target_type == 'unimodal':
-        res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, correlation))
-    elif target_type == 'bimodal':
-        res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, correlation))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, correlation))
-    else:
-        res = np.exp(np.sum([x[i]*x[i+1] for i in range(t-1)]))
-    if res == 0:
-        return float('-inf')
-    else:
-        return math.log(res)
-
-def oracle_sampling(ndim):
-    if target_type == 'unimodal':
-        return multivariate_normal.rvs(mean = 3*np.ones(ndim), cov = 4*cov(ndim, correlation), size = 1)
-    else:
-        return (2*bernoulli.rvs(p = 1/2, size = 1)-1) * multivariate_normal.rvs(mean = 3*np.ones(ndim), cov = 4*cov(ndim, correlation), size = 1)
-
-# -*- coding: utf-8 -*-
 """
 Created on Mon Mar  2 16:33:14 2020
 
@@ -68,15 +15,14 @@ from joblib import Parallel, delayed
 import timeit
 import sys
 
-# def cov(dim = 2, correlation = 0.5):
-#     res = np.eye(dim)
-#     for j in range(dim-1):
-#         res[j, j+1] = correlation
-#         res[j+1, j] = correlation
-#     return res
 
-# def log_target_f(t, x):
-#     return(math.log(multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, 0.5))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, 0.5))))
+a, b, c, d, e = sys.argv[1:]
+n_dim = int(a) # number of dimensions
+n_particles = int(b) # number of particles
+rho = float(d)# rho
+ess_ratio = float(e) # ess ratio
+
+
 
 def Stratified_Matrix(ww, M):
     w = ww.copy()
@@ -120,37 +66,16 @@ def Stratified_Resampling(particles, weights, size, rho):
     res = [np.array([particles[i] for i in indices]), np.array([weights_after[i] for i in indices])]
     return res
 
-def Hilbert_Resampling(particles, weights, size, t, rho):
-    particles = np.array(particles)
-    # print(particles)
-    dim = particles.shape[1]
-    dim = t+1
-    pmax = [max(particles[:,k])+0.1 for k in range(dim)]
-    pmin = [min(particles[:,k])-0.1 for k in range(dim)]
-    unified_particles = np.array([[(par[k]-pmin[k])/(pmax[k]-pmin[k]) for k in range(dim)] for par in particles])
-    hilbert_mapping = [Hilbert_Mapping(up, dim=dim) for up in unified_particles]
-    # getting weights
-    resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
-    Weighted_Sample = pd.concat([pd.DataFrame(particles),pd.DataFrame({"weight": resampling_weights, 'map': hilbert_mapping})],axis=1)
-    Weighted_Sample = Weighted_Sample.sort_values(by = ['map'], ascending = True)
-    Weighted_Sample.index = range(Weighted_Sample.shape[0])
-    w = Weighted_Sample['weight']
-    weight_matrix = Stratified_Matrix(w, M = size)
-    
-    indices = [random.choice(range(len(particles)), p = w) for w in weight_matrix]
-    xx = np.array(Weighted_Sample.iloc[indices, list(range(particles.shape[1]))])
-    ww = np.array([weights_after[i] for i in indices])
-    return xx, ww
 
 def Multinomial_Resampling(particles, weights, size, rho):
     resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
     indices = [random.choice(range(len(particles)), p = resampling_weights) for _ in range(size)]
-    xx = np.array([particles[i] for i in indices])
+    xx = [particles[i] for i in indices]
     ww = np.array([weights_after[i] for i in indices])
     ww = ww/np.sum(ww)
     return xx, ww
 
-def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, descendant = 'stratified'):
+def Multiple_Descendent_Proposal(particles, weights, t, descendant = 'stratified'):
     x_prop = []
     weight_prop = []
     i = 0
@@ -159,7 +84,6 @@ def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, descen
         down = np.array(xi[t-1]) + np.array([0,-1])
         left = np.array(xi[t-1]) + np.array([-1,0])
         right = np.array(xi[t-1]) + np.array([1,0])
-        print(np.array(xi), xi[t-1])
         legal = []
         for possible_xt in [up, down, left, right]:
             if tuple(possible_xt) not in [tuple(xx) for xx in xi]:
@@ -175,111 +99,72 @@ def Multiple_Descendent_Proposal(particles, weights, t, multiple_des = 4, descen
         i = i + 1
     return x_prop, weight_prop
 
-def Hilbert_Mapping(x, p = 8, dim = 10):
-    hilbert_curve = HilbertCurve(p, dim)
-    aa = [int(xx) for xx in x*2**p]
-    h = hilbert_curve.distance_from_coordinates(aa)
-    h = np.array(h/(2**(p*dim)))
-    return h
+def Random_Walk_Proposal(particles, weights, t):
+    x_prop = []
+    weight_prop = []
+    i = 0
+    for xi in particles:
+        up = np.array(xi[t-1]) + np.array([0,1])
+        down = np.array(xi[t-1]) + np.array([0,-1])
+        left = np.array(xi[t-1]) + np.array([-1,0])
+        right = np.array(xi[t-1]) + np.array([1,0])
+        legal = []
+        possible_xt = [up, down, left, right][random.choice(4)]
+        if tuple(possible_xt) not in [tuple(xx) for xx in xi]:
+            legal.append(xi + [possible_xt])
+        if len(legal) > 0:
+            k = len(legal)
+            weight_prop = weight_prop + [k*weights[i]]*k
+            x_prop = x_prop + legal
+        i = i + 1
+    return x_prop, weight_prop
 
-def Hilbert_Mapping_Inverse(h, p = 8, dim = 10):
-    hilbert_curve = HilbertCurve(p, dim)
-    aa = hilbert_curve.coordinates_from_distance(int(h*2**(p*dim)))
-    aa = np.array(aa) + 0.5
-    aa = aa/(2**p)
-    return aa
-
-
-def Sampling(rho, ess_ratio = 1, T = 10, size = 100, multiple_des = 4, sd = 3, prop = 'stratified', resample = Multinomial_Resampling, print_step = True): #need modification
+def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resample = Multinomial_Resampling, print_step = True): #need modification
     # change ess_ratio for adaptive resampling
     if print_step:
         print("dimension "+ str(1) + "/" + str(T))
     w = np.ones(size)/size
     xt1 = [[np.array([0,0])] for _ in range(size)]
     normalizing_constant_estimate = [1.0]*T
-    for t in range(1,T):
-        if print_step:
-            print("dimension "+ str(t+1) + "/" + str(T))
-        xt1, w = Multiple_Descendent_Proposal(xt1, w, t, multiple_des, prop)
-        normalizing_constant_estimate[t] = np.mean(w)
-        w = w/np.sum(w)
-        if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
-            xt1, w = resample(xt1, w, size, rho)
-        if t==T-1:
-            return xt1, w, np.mean(w)
+    log_nomalizing_constant_estimate = 0
+    if prop == 'stratified':
+        for t in range(1,T):
+            if print_step:
+                print("dimension "+ str(t+1) + "/" + str(T))
+            xt1, w = Multiple_Descendent_Proposal(xt1, w, t, prop)
+            normalizing_constant_estimate[t] = np.mean(w)
+            w = w/np.sum(w)
+            if t<T-1:
+                log_nomalizing_constant_estimate += np.log(np.mean(w)) 
+                xt1, w = resample(xt1, w, size, rho)
+            if t==T-1:
+                log_nomalizing_constant_estimate += np.log(np.mean(w)) 
+    else:
+        for t in range(1,T):
+            if print_step:
+                print("dimension "+ str(t+1) + "/" + str(T))
+            xt1, w = Random_Walk_Proposal(xt1, w, t)
+            normalizing_constant_estimate[t] = np.mean(w)
+            w = w/np.sum(w)
+            if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
+                log_nomalizing_constant_estimate += np.log(np.mean(w)) 
+                xt1, w = resample(xt1, w, size, rho)
+            if t==T-1:
+                log_nomalizing_constant_estimate += np.log(np.mean(w))           
+    return xt1, w, log_nomalizing_constant_estimate
 
  
-import matplotlib.pyplot as plt
-
-sd = 3
-err_iid = []
-err_smg = []
-err_more = []
-err_ada = []
-mse_iid = []
-mse_smg = []
-mse_more = []
-mse_ada = []
+res_log_normal = []
+res_log_normal_rw = []
 for _ in range(160):
-    Samples_iid, weights_iid, MSE_iid = Sampling(rho = rho, T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'i.i.d.', resample = Hilbert_Resampling, print_step = False)
-    Samples_SMG, weights_SMG, MSE_SMG = Sampling(rho = rho, T = n_dim, size = n_particles, multiple_des = n_multiple_des, sd = sd, prop = 'SMG', resample = Hilbert_Resampling, print_step = False)
-    Samples_more_particles, weights_more_particles, MSE_more_particles = Sampling(rho= rho, T = n_dim, size = n_multiple_des*n_particles, multiple_des = 1, sd = sd, prop = 'SMG', resample = Hilbert_Resampling, print_step = False)
-    Samples_ada, weights_ada, MSE_ada = Adaptive_Sampling(ess_ratio=rho, T = n_dim, size = n_particles*n_multiple_des, multiple_des = 1, sd = sd, prop = 'SMG', resample = Hilbert_Resampling, print_step = False)
-    # plotting the last two dimensions; results are random because we need to resample to remove the weights
-    # plt.style.use(u'default')
-    # plt.rcParams['figure.figsize'] = (15,5)
-    # plt.plot(list(range(nT)), list(np.sum((np.array(res_HC[nt]) - np.array(est_ora[nt]))**2) for nt in range(nT)),color='black')
-    # plt.plot(list(range(nT)), list(np.sum((np.array(res_OT[nt]) - np.array(est_ora[nt]))**2) for nt in range(nT)),color='blue')
-    
-    
-    #fig = plt.figure(figsize = (15,5))
-    #ax1 = fig.add_subplot(1,3,1, adjustable='box', aspect=1, xlim = (-7,7), ylim = (-7,7))
-    #ax2 = fig.add_subplot(1,3,2, adjustable='box', aspect=1, xlim = (-7,7), ylim = (-7,7))
-    #ax3 = fig.add_subplot(1,3,3, adjustable='box', aspect=1, xlim = (-7,7), ylim = (-7,7))
-    #samples_iid = Hilbert_Resampling(Samples_iid, weights_iid, n_particles, n_dim-1, rho = 1)[0]
-    #ax1.scatter(samples_iid[:,n_dim-2],samples_iid[:,n_dim-1])
-    #ax1.set_title(str(n_particles)+" particles, "+str(n_multiple_des)+' descendants i.i.d.')
-    
-    #samples_SMG = Hilbert_Resampling(Samples_SMG, weights_SMG, n_particles, n_dim-1, rho= 1)[0]
-    #ax2.scatter(samples_SMG[:,n_dim-2],samples_SMG[:,n_dim-1])
-    #ax2.set_title(str(n_particles)+" particles, "+str(n_multiple_des)+' descendants SMG')
-    
-    #samples_more = Hilbert_Resampling(Samples_more_particles, weights_more_particles, n_particles, n_dim-1, rho= 1)[0]
-    #ax3.scatter(samples_more[:,n_dim-2],samples_more[:,n_dim-1])
-    #ax3.set_title(str(n_multiple_des*n_particles)+" particles, 1 descendant")
-    #plt.savefig('SMG'+ a +'_'+ b + '_'+ c + '_' + d + '.png',bbox_inches='tight')
-    #samples_ada = Hilbert_Resampling(Samples_ada, weights_ada, n_particles, n_dim-1, rho= 1)[0]
-    
-    # component = bernoulli.rvs(p = 1/2, size = n_particles)
-    # multi_sample = multivariate_normal.rvs(mean = np.zeros(n_dim), cov = np.eye(n_dim), size = n_particles)
-    sample_oracle = np.array([oracle_sampling(n_dim) for i in range(n_particles)])
-    
-    eqweight = np.ones(n_particles)/n_particles
-    dist_mat = np.array([[np.linalg.norm(sample_oracle[i] - Samples_iid[j]) for j in range(n_particles*n_multiple_des)] for i in range(n_particles)])
-    err1= ot.emd2(eqweight,weights_iid ,dist_mat)
-    
-    eqweight = np.ones(n_particles)/n_particles
-    dist_mat = np.array([[np.linalg.norm(sample_oracle[i] - Samples_SMG[j]) for j in range(n_particles*n_multiple_des)] for i in range(n_particles)])
-    err2= ot.emd2(eqweight, weights_SMG, dist_mat)
-    
-    eqweight = np.ones(n_particles)/n_particles
-    dist_mat = np.array([[np.linalg.norm(sample_oracle[i] - Samples_more_particles[j]) for j in range(n_particles*n_multiple_des)] for i in range(n_particles)])
-    err3= ot.emd2(eqweight, weights_more_particles, dist_mat)
-    
-    eqweight = np.ones(n_particles)/n_particles
-    dist_mat = np.array([[np.linalg.norm(sample_oracle[i] - Samples_ada[j]) for j in range(n_particles*n_multiple_des)] for i in range(n_particles)])
-    err4= ot.emd2(eqweight, weights_ada, dist_mat)
-    
-    err_iid.append(err1)
-    err_smg.append(err2)
-    err_more.append(err3)
-    err_ada.append(err4)
-    mse_iid.append(MSE_iid)
-    mse_smg.append(MSE_SMG)
-    mse_more.append(MSE_more_particles)
-    mse_ada.append(MSE_ada)
-res = pd.DataFrame([err_iid, err_smg, err_more, err_ada, mse_iid, mse_smg, mse_more, mse_ada])
-res.to_csv('/n/jun_liu_lab/smg_copy/' + str(n_dim) + '_' + str(correlation) + '_' + target_type + '_' + str(n_particles) + '_' + str(n_multiple_des) + '_' + str(rho) + 'res.csv', index = False)
+    Samples_iid, weights_iid, log_normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
+    Samples_rw, weights_rw, log_normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
+
+res_log_normal.append(log_normal)
+res_log_normal_rw.append(log_normal_rw)
+
+res = pd.DataFrame([res_log_normal, res_log_normal_rw])
+res.to_csv('/n/jun_liu_lab/saw/' + str(n_particles) + '_' + str(rho) + '_' + str(ess_ratio) +'res.csv', index = False)
 # =============================================================================
 # f= open('weighted_resampling.csv', 'a')
 # f.write(a + ',' + ',' + b + ','+ c + ','+ d + ',' + str(err1) + ',' + str(err2) + ',' + str(err3) + '\n')
