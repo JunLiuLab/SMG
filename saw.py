@@ -133,12 +133,10 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Multiple_Descendent_Proposal(xt1, w, t, prop)
             normalizing_constant_estimate[t] = np.mean(w)
-            w = w/np.sum(w)
+            w = w/np.sum(w)                
+            log_nomalizing_constant_estimate += np.log(np.mean(w)) 
             if t<T-1:
-                log_nomalizing_constant_estimate += np.log(np.mean(w)) 
                 xt1, w = resample(xt1, w, size, rho)
-            if t==T-1:
-                log_nomalizing_constant_estimate += np.log(np.mean(w)) 
     else:
         for t in range(1,T):
             if print_step:
