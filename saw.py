@@ -146,11 +146,10 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
             xt1, w = Random_Walk_Proposal(xt1, w, t)
             normalizing_constant_estimate[t] = np.mean(w)
             w = w/np.sum(w)
+            log_nomalizing_constant_estimate += np.log(np.mean(w)) 
             if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
-                log_nomalizing_constant_estimate += np.log(np.mean(w)) 
                 xt1, w = resample(xt1, w, size, rho)
-            if t==T-1:
-                log_nomalizing_constant_estimate += np.log(np.mean(w))           
+   
     return xt1, w, log_nomalizing_constant_estimate
 
  
