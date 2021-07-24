@@ -14,9 +14,11 @@ from hilbertcurve.hilbertcurve import HilbertCurve
 from joblib import Parallel, delayed
 import timeit
 import sys
+from os import path
+import csv
 
 
-a, b, c, d, e = sys.argv[1:]
+a, b, d, e = sys.argv[1:]
 n_dim = int(a) # number of dimensions
 n_particles = int(b) # number of particles
 rho = float(d)# rho
@@ -134,7 +136,7 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
             xt1, w = Multiple_Descendent_Proposal(xt1, w, t, prop)
             normalizing_constant_estimate[t] = np.mean(w)
             w = w/np.sum(w)                
-            log_nomalizing_constant_estimate += np.log(np.mean(w)) 
+            log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
             if t<T-1:
                 xt1, w = resample(xt1, w, size, rho)
     else:
@@ -144,26 +146,50 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
             xt1, w = Random_Walk_Proposal(xt1, w, t)
             normalizing_constant_estimate[t] = np.mean(w)
             w = w/np.sum(w)
-            log_nomalizing_constant_estimate += np.log(np.mean(w)) 
+            log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
             if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
                 xt1, w = resample(xt1, w, size, rho)
    
     return xt1, w, log_nomalizing_constant_estimate
 
- 
+filename_w = '/n/jun_liu_lab/wenshuowang/saw.csv'
+filename_l = '/n/jun_liu_lab/yichaoli/saw.csv'
+
+
 res_log_normal = []
 res_log_normal_rw = []
 for _ in range(160):
     Samples_iid, weights_iid, log_normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
     Samples_rw, weights_rw, log_normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
+    res_log_normal.append(log_normal)
+    res_log_normal_rw.append(log_normal_rw)
 
-res_log_normal.append(log_normal)
-res_log_normal_rw.append(log_normal_rw)
-
-res = pd.DataFrame([res_log_normal, res_log_normal_rw])
-res.to_csv('/n/jun_liu_lab/saw/' + str(n_particles) + '_' + str(rho) + '_' + str(ess_ratio) +'res.csv', index = False)
+# res = pd.DataFrame([res_log_normal, res_log_normal_rw])
+# res.to_csv('/n/jun_liu_lab/wenshuowang/saw' + str(n_particles) + '_' + str(rho) + '_' + str(ess_ratio) +'res.csv', index = False)
 # =============================================================================
 # f= open('weighted_resampling.csv', 'a')
 # f.write(a + ',' + ',' + b + ','+ c + ','+ d + ',' + str(err1) + ',' + str(err2) + ',' + str(err3) + '\n')
 # f.close()
 # =============================================================================
+
+for filename in [filename_l, filename_w]:
+    try:
+        if(not path.exists(filename)):
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                head = ['T', 'n', 'rho', 'ess_ratio', 'proposal', 'mean', 'median', 'sd']
+                writer.writerow(head)
+
+        with open(filename, 'a', newline='') as f:
+            writer = csv.writer(f)
+            head = [n_dim, n_particles, rho, ess_ratio, 'stratified', np.mean(res_log_normal), np.median(res_log_normal), np.std(res_log_normal)]
+            writer.writerow(head)
+        # with open(filename, 'a', newline='') as f:
+        #     writer = csv.writer(f)
+        #     head = [n_dim, n_particles, rho, ess_ratio, 'random_walk', np.mean(res_log_normal_rw), np.median(res_log_normal_rw), np.std(res_log_normal_rw)]
+        #     writer.writerow(head)
+    except:
+        pass
+
+
+
