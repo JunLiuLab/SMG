@@ -92,7 +92,7 @@ def Multiple_Descendent_Proposal(particles, weights, t, descendant = 'stratified
                 legal.append(xi + [possible_xt])
         if len(legal) > 0:
             k = len(legal)
-            weight_prop = weight_prop + [k*weights[i]]*k
+            weight_prop = weight_prop + [weights[i]]*k
             if descendant == 'stratified':
                 x_prop = x_prop + legal
             else:
@@ -102,6 +102,7 @@ def Multiple_Descendent_Proposal(particles, weights, t, descendant = 'stratified
     return x_prop, weight_prop
 
 def Random_Walk_Proposal(particles, weights, t):
+    # I am not sure what is this. Seems to be the same as stratified proposal
     x_prop = []
     weight_prop = []
     i = 0
@@ -121,11 +122,11 @@ def Random_Walk_Proposal(particles, weights, t):
         i = i + 1
     return x_prop, weight_prop
 
-def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resample = Multinomial_Resampling, print_step = True): #need modification
+def Sampling(rho, ess_ratio = 1, T = 10, size = 10,  prop = 'stratified', resample = Multinomial_Resampling, print_step = True): #need modification
     # change ess_ratio for adaptive resampling
     if print_step:
         print("dimension "+ str(1) + "/" + str(T))
-    w = np.ones(size)/size
+    w = np.ones(size)
     xt1 = [[np.array([0,0])] for _ in range(size)]
     normalizing_constant_estimate = [1.0]*T
     log_nomalizing_constant_estimate = 0
@@ -134,10 +135,11 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
             if print_step:
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Multiple_Descendent_Proposal(xt1, w, t, prop)
-            normalizing_constant_estimate[t] = np.sum(w)/(size*4)
+            normalizing_constant_estimate[t] = np.sum(w)/size # np.sum(w)/(size*4)
             w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
             if t<T-1:
+                print(w, size)
                 xt1, w = resample(xt1, w, size, rho)
                 w = w/np.mean(w)
     else:
@@ -145,10 +147,10 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
             if print_step:
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Random_Walk_Proposal(xt1, w, t)
-            normalizing_constant_estimate[t] = np.sum(w)/(size*4)
+            normalizing_constant_estimate[t] = np.sum(w)/(size)
             w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
-            if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
+            if t<T-1 and 1/sum(w**2) < ess_ratio*len(w)/(np.sum(w)**2):
                 xt1, w = resample(xt1, w, size, rho)
                 w = w/np.mean(w)
    
