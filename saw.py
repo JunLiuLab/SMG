@@ -134,35 +134,37 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 100,  prop = 'stratified', resam
             if print_step:
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Multiple_Descendent_Proposal(xt1, w, t, prop)
-            normalizing_constant_estimate[t] = np.mean(w)
-            w = w/np.sum(w)                
+            normalizing_constant_estimate[t] = np.sum(w)/(size*4)
+            w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
             if t<T-1:
                 xt1, w = resample(xt1, w, size, rho)
+                w = w/np.mean(w)
     else:
         for t in range(1,T):
             if print_step:
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Random_Walk_Proposal(xt1, w, t)
-            normalizing_constant_estimate[t] = np.mean(w)
-            w = w/np.sum(w)
+            normalizing_constant_estimate[t] = np.sum(w)/(size*4)
+            w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
             if t<T-1 and 1/sum(w**2) < ess_ratio*len(w):
                 xt1, w = resample(xt1, w, size, rho)
+                w = w/np.mean(w)
    
-    return xt1, w, log_nomalizing_constant_estimate
+    return xt1, w, np.exp(log_nomalizing_constant_estimate)
 
 filename_w = '/n/jun_liu_lab/wenshuowang/saw.csv'
 filename_l = '/n/jun_liu_lab/yichaoli/saw.csv'
 
 
-res_log_normal = []
-res_log_normal_rw = []
+res_normal = []
+res_normal_rw = []
 for _ in range(160):
-    Samples_iid, weights_iid, log_normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
-    Samples_rw, weights_rw, log_normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
-    res_log_normal.append(log_normal)
-    res_log_normal_rw.append(log_normal_rw)
+    Samples_iid, weights_iid, normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
+    Samples_rw, weights_rw, normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
+    res_normal.append(normal)
+    res_normal_rw.append(normal_rw)
 
 # res = pd.DataFrame([res_log_normal, res_log_normal_rw])
 # res.to_csv('/n/jun_liu_lab/wenshuowang/saw' + str(n_particles) + '_' + str(rho) + '_' + str(ess_ratio) +'res.csv', index = False)
@@ -182,7 +184,7 @@ for filename in [filename_l, filename_w]:
 
         with open(filename, 'a', newline='') as f:
             writer = csv.writer(f)
-            head = [n_dim, n_particles, rho, ess_ratio, 'stratified', np.mean(res_log_normal), np.median(res_log_normal), np.std(res_log_normal)]
+            head = [n_dim, n_particles, rho, ess_ratio, 'stratified', np.mean(res_normal), np.median(res_normal), np.std(res_normal)]
             writer.writerow(head)
         # with open(filename, 'a', newline='') as f:
         #     writer = csv.writer(f)

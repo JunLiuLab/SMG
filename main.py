@@ -37,8 +37,10 @@ def cov(dim = 2, correlation = 0.5):
 def log_target_f(t, x):
     if target_type == 'unimodal':
         res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, correlation))
-    else:
+    elif target_type == 'bimodal':
         res = multivariate_normal.pdf(x[0:(t+1)],3*np.ones(t+1),4*cov(t+1, correlation))+multivariate_normal.pdf(x[0:(t+1)],-3*np.ones(t+1),4*cov(t+1, correlation))
+    else:
+        res = np.exp(np.sum([x[i]*x[i+1] for i in range(t-1)]))
     if res == 0:
         return float('-inf')
     else:
@@ -141,7 +143,7 @@ def Hilbert_Resampling(particles, weights, size, t, rho):
 
 def Multinomial_Resampling(particles, weights, size, rho):
     resampling_weights, weights_after = General_Resampling_Weights(weights, rho)
-    indices = [random.choice(range(len(particles)), p = weights) for _ in range(size)]
+    indices = [random.choice(range(len(particles)), p = resampling_weights) for _ in range(size)]
     xx = np.array([particles[i] for i in indices])
     ww = np.array([weights_after[i] for i in indices])
     return xx, ww
