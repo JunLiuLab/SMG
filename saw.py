@@ -92,7 +92,7 @@ def Multiple_Descendent_Proposal(particles, weights, t, descendant = 'stratified
                 legal.append(xi + [possible_xt])
         if len(legal) > 0:
             k = len(legal)
-            weight_prop = weight_prop + [weights[i]]*k
+            weight_prop = weight_prop + [k*weights[i]]*k
             if descendant == 'stratified':
                 x_prop = x_prop + legal
             else:
@@ -139,7 +139,6 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 10,  prop = 'stratified', resamp
             w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
             if t<T-1:
-                print(w, size)
                 xt1, w = resample(xt1, w, size, rho)
                 w = w/np.mean(w)
     else:
@@ -147,10 +146,12 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 10,  prop = 'stratified', resamp
             if print_step:
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Random_Walk_Proposal(xt1, w, t)
-            normalizing_constant_estimate[t] = np.sum(w)/(size)
+            normalizing_constant_estimate[t] = np.sum(w)/size
             w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
+            print(np.sum(w)**2)
             if t<T-1 and 1/sum(w**2) < ess_ratio*len(w)/(np.sum(w)**2):
+                print(size, sum(w))
                 xt1, w = resample(xt1, w, size, rho)
                 w = w/np.mean(w)
    
@@ -164,9 +165,9 @@ res_normal = []
 res_normal_rw = []
 for _ in range(160):
     Samples_iid, weights_iid, normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
-    Samples_rw, weights_rw, normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
+    #Samples_rw, weights_rw, normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
     res_normal.append(normal)
-    res_normal_rw.append(normal_rw)
+    #res_normal_rw.append(normal_rw)
 
 # res = pd.DataFrame([res_log_normal, res_log_normal_rw])
 # res.to_csv('/n/jun_liu_lab/wenshuowang/saw' + str(n_particles) + '_' + str(rho) + '_' + str(ess_ratio) +'res.csv', index = False)
