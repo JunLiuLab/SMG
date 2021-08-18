@@ -92,7 +92,7 @@ def Multiple_Descendent_Proposal(particles, weights, t, descendant = 'stratified
                 legal.append(xi + [possible_xt])
         if len(legal) > 0:
             k = len(legal)
-            weight_prop = weight_prop + [k*weights[i]]*k
+            weight_prop = weight_prop + [weights[i]]*k
             if descendant == 'stratified':
                 x_prop = x_prop + legal
             else:
@@ -112,13 +112,15 @@ def Random_Walk_Proposal(particles, weights, t):
         left = np.array(xi[t-1]) + np.array([-1,0])
         right = np.array(xi[t-1]) + np.array([1,0])
         legal = []
-        possible_xt = [up, down, left, right][random.choice(4)]
-        if tuple(possible_xt) not in [tuple(xx) for xx in xi]:
-            legal.append(xi + [possible_xt])
+        for possible_xt in [up, down, left, right]:
+            if tuple(possible_xt) not in [tuple(xx) for xx in xi]:
+                legal.append(xi + [possible_xt])
+
         if len(legal) > 0:
             k = len(legal)
-            weight_prop = weight_prop + [k*weights[i]]*k
-            x_prop = x_prop + legal
+            index = random.choice(range(k))
+            x_prop = x_prop + [legal[index]]
+            weight_prop = weight_prop + [k*weights[i]]
         i = i + 1
     return x_prop, weight_prop
 
@@ -146,12 +148,11 @@ def Sampling(rho, ess_ratio = 1, T = 10, size = 10,  prop = 'stratified', resamp
             if print_step:
                 print("dimension "+ str(t+1) + "/" + str(T))
             xt1, w = Random_Walk_Proposal(xt1, w, t)
-            normalizing_constant_estimate[t] = np.sum(w)/size
+            normalizing_constant_estimate[t] = np.mean(w)
             w = w/np.mean(w)
             log_nomalizing_constant_estimate += np.log(normalizing_constant_estimate[t]) 
-            print(np.sum(w)**2)
             if t<T-1 and 1/sum(w**2) < ess_ratio*len(w)/(np.sum(w)**2):
-                print(size, sum(w))
+                print(normalizing_constant_estimate)
                 xt1, w = resample(xt1, w, size, rho)
                 w = w/np.mean(w)
    
@@ -164,10 +165,10 @@ filename_l = '/n/jun_liu_lab/yichaoli/saw.csv'
 res_normal = []
 res_normal_rw = []
 for _ in range(160):
-    Samples_iid, weights_iid, normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
-    #Samples_rw, weights_rw, normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
-    res_normal.append(normal)
-    #res_normal_rw.append(normal_rw)
+    #Samples_iid, weights_iid, normal = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, print_step = True)
+    Samples_rw, weights_rw, normal_rw = Sampling(rho = rho, ess_ratio = ess_ratio ,T = n_dim, size = n_particles, prop = 'rw', print_step = True)
+    #res_normal.append(normal)
+    res_normal_rw.append(normal_rw)
 
 # res = pd.DataFrame([res_log_normal, res_log_normal_rw])
 # res.to_csv('/n/jun_liu_lab/wenshuowang/saw' + str(n_particles) + '_' + str(rho) + '_' + str(ess_ratio) +'res.csv', index = False)
@@ -187,7 +188,7 @@ for filename in [filename_l, filename_w]:
 
         with open(filename, 'a', newline='') as f:
             writer = csv.writer(f)
-            head = [n_dim, n_particles, rho, ess_ratio, 'stratified', np.mean(res_normal), np.median(res_normal), np.std(res_normal)]
+            head = [n_dim, n_particles, rho, ess_ratio, 'stratified', np.mean(res_normal_rw), np.median(res_normal_rw), np.std(res_normal_rw)]
             writer.writerow(head)
         # with open(filename, 'a', newline='') as f:
         #     writer = csv.writer(f)
